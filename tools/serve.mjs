@@ -7,6 +7,7 @@ const port = Number(process.env.PORT || 8080);
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
   '.css': 'text/css',
   '.json': 'application/json',
   '.png': 'image/png',

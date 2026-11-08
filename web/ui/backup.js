@@ -3,6 +3,7 @@ import { runtime } from './runtime.js';
 import { $, C, toast } from './dom.js';
 import { persist, rebuildQueue } from './state.js';
 import { render } from './navigation.js';
+import { restoreScheduler } from '../domain/scheduler.js';
 
 /** Import one active book. A different book requires explicit replacement confirmation. */
 export async function importData(raw, kind) {
@@ -10,7 +11,7 @@ export async function importData(raw, kind) {
     const data = JSON.parse(raw.replace(/^\uFEFF/, ''));
     let next;
     if (kind === 'restore') {
-      next = C.validateState(data);
+      next = restoreScheduler(C.importBackup(data));
       if (
         runtime.state &&
         !confirm('恢复备份将替换当前词库和学习记录。请先导出需要保留的记录。确认继续？')
@@ -57,7 +58,7 @@ export function requestImport(kind) {
 }
 
 export function exportBackup() {
-  const raw = JSON.stringify(runtime.state, null, 2);
+  const raw = JSON.stringify(C.exportBackup(runtime.state), null, 2);
   const name = '词记-完整备份-' + C.localDate() + '.json';
   if (window.AndroidStore) window.AndroidStore.exportFile(raw, name);
   else {

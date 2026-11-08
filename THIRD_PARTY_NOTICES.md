@@ -20,3 +20,5 @@ SDK、JDK、浏览器内核和格式化工具的缓存不属于源码交付。�
 根package.json固定覆盖Tablestore的protobufjs为7.6.6、buffer为4.9.2，避免沿用旧版间接依赖。必须从工程根目录按package-lock.json安装，不要在cloud目录单独安装旧依赖。SDK兼容检查覆盖生成协议的编码/解码与客户端构造；真实Tablestore请求仍需部署后验收。
 
 补充：protobufjs 7.6.6使用BSD-3-Clause，buffer 4.9.2使用MIT，版本按根锁文件固定。
+
+新增：ts-fsrs 6.0.0及其srs-kit依赖均为MIT；浏览器离线依赖由`npm run generate`生成，原许可位于`web/vendor/*-LICENSE.txt`，版本与SHA256见`web/vendor/fsrs-provenance.json`。esbuild 0.28.2（MIT）仅用于生成这些依赖文件；主应用仍按原生ES模块维护。Robolectric 4.17（MIT）仅用于电脑端SQLite事务模拟测试，不打入安卓应用，也不等同于实体设备测试。

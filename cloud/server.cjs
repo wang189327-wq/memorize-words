@@ -5,6 +5,7 @@ const http = require('node:http'),
   { Conflict, aliyunStore } = require('./store.cjs');
 const scrypt = promisify(crypto.scrypt),
   hash = (s) => crypto.createHash('sha256').update(s).digest('hex');
+const { algorithm, validateRating, canonicalRating } = require('./rating-contract.cjs');
 const error = (status, message) => Object.assign(Error(message), { status });
 const validDate = (x) =>
   typeof x === 'string' &&
@@ -142,6 +143,7 @@ function createApp({ store, env = process.env, now = () => Date.now() } = {}) {
           service: 'wordmemo-sync',
           version: require('./package.json').version,
           favoritesSync: true,
+          ratingSync: true,
           booksStored: false,
         });
       const db = typeof store === 'function' ? store(req) : store || aliyunStore(req, env);
@@ -208,6 +210,67 @@ function createApp({ store, env = process.env, now = () => Date.now() } = {}) {
       }
       const user = auth(req);
       rate(req, 'sync', 120);
+      if (req.method === 'GET' && url.pathname === '/v2/capabilities')
+        return send(200, { ratingSync: true, algorithms: [algorithm] });
+      if (url.pathname.startsWith('/v2/ratings/')) {
+        let book;
+        try {
+          book = decodeURIComponent(url.pathname.slice('/v2/ratings/'.length));
+        } catch {
+          throw error(400, '书籍标识无效');
+        }
+        if (!book || book.length > 100) throw error(400, '书籍标识无效');
+        const pk = user.sub + ':' + hash(book);
+        if (req.method === 'GET') {
+          const fingerprint = url.searchParams.get('fingerprint'),
+            meta = await db.get(pk, 'meta');
+          if (!/^[a-f0-9]{64}$/.test(fingerprint || '')) throw error(400, '词库指纹无效');
+          if (meta && meta.value.fingerprint !== fingerprint)
+            throw error(409, '设备词库版本不一致，请导入相同词库');
+          const cursor = url.searchParams.get('cursor') || '';
+          if (cursor && (!cursor.startsWith('rating:') || cursor.length > 350))
+            throw error(400, '分页参数无效');
+          const page = await db.list(pk, 'rating:', cursor, 500);
+          return send(200, {
+            records: page.rows.map((row) => row.value),
+            next: page.next,
+            ratingSync: true,
+          });
+        }
+        if (req.method !== 'POST') throw error(405, '请求方法不支持');
+        const batch = await body(req);
+        if (
+          !/^[a-f0-9]{64}$/.test(batch.fingerprint || '') ||
+          !Array.isArray(batch.events) ||
+          batch.events.length > 100 ||
+          Object.keys(batch).some((key) => !['fingerprint', 'events'].includes(key))
+        )
+          throw error(400, '评分批次无效，每批最多100条且不接受词书');
+        const ids = new Map();
+        for (const event of batch.events) {
+          try {
+            validateRating(event, { bookId: book, now: now() });
+          } catch (e) {
+            throw error(400, e.message);
+          }
+          const content = canonicalRating(event);
+          if (ids.has(event.eventId) && ids.get(event.eventId) !== content)
+            throw error(409, '评分标识冲突');
+          ids.set(event.eventId, content);
+        }
+        await update(db, pk, 'meta', (old) => {
+          if (old && old.fingerprint !== batch.fingerprint)
+            throw error(409, '设备词库版本不一致，请导入相同词库');
+          return old || { fingerprint: batch.fingerprint };
+        });
+        for (const event of batch.events)
+          await update(db, pk, 'rating:' + event.eventId, (old) => {
+            if (old && canonicalRating(old) !== canonicalRating(event))
+              throw error(409, '评分标识冲突');
+            return old ? undefined : event;
+          });
+        return send(200, { ok: true, accepted: batch.events.length, ratingSync: true });
+      }
       const favoriteRoute = url.pathname.startsWith('/v1/favorites/');
       if (!favoriteRoute && !url.pathname.startsWith('/v1/progress/'))
         throw error(404, '接口不存在');

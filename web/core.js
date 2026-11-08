@@ -1,7 +1,8 @@
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.WordMemo = factory();
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  if (typeof module === 'object' && module.exports)
+    module.exports = factory(require('../cloud/rating-contract.cjs'));
+  else root.WordMemo = factory(root.WordMemoRatingContract);
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (ratings) {
   'use strict';
   const MODES = ['meaning', 'spelling', 'cloze', 'conversion'];
   function fail(message) {
@@ -193,6 +194,16 @@
       fail('备份格式无效。');
     if (s.deck !== validatedDeck) validateDeck(s.deck);
     const ids = new Set(s.deck.cards.map((c) => c.id));
+    if (s.ratingEvents !== undefined) {
+      if (!Array.isArray(s.ratingEvents)) fail('智能复习日志格式无效。');
+      const seen = new Set();
+      for (const event of s.ratingEvents) {
+        ratings.validateRating(event, { bookId: s.deck.bookId });
+        if (!ids.has(event.id) || seen.has(event.eventId))
+          fail('智能复习日志含未知单词或重复事件。');
+        seen.add(event.eventId);
+      }
+    }
     if (
       s.favorites !== undefined &&
       (!plain(s.favorites) ||
@@ -299,6 +310,17 @@
     };
     validateDeck(deck);
     return { state: { ...state, deck }, added, updated };
+  }
+  function exportBackup(state) {
+    validateState(state);
+    return { format: 'memorize-words-backup', schemaVersion: 2, state };
+  }
+  function importBackup(value) {
+    if (value?.schemaVersion === 2) {
+      if (value.format !== 'memorize-words-backup') fail('备份封装格式无效。');
+      return validateState(value.state);
+    }
+    return validateState(value);
   }
   function markLearned(state, id, date = localDate()) {
     if (!state.deck.cards.some((c) => c.id === id) || !dateOK(date)) fail('无效词条或日期。');
@@ -541,6 +563,8 @@
     validateDeck,
     emptyState,
     validateState,
+    exportBackup,
+    importBackup,
     mergeDeck,
     markLearned,
     selectWords,

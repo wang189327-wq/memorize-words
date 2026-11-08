@@ -109,6 +109,15 @@
           throw Error('账号状态已改变');
         return request(path, body, c);
       };
+      let ratingSupported = false;
+      try {
+        const capabilities = await syncRequest('/v2/capabilities');
+        ratingSupported =
+          capabilities.ratingSync === true &&
+          capabilities.algorithms?.includes(root.WordMemoRatingContract.algorithm);
+      } catch (e) {
+        if (e.status !== 404) throw e;
+      }
       if (initial.results.some((r) => !r.eventId)) {
         const normalized = await Promise.all(
           initial.results.map(async (r, i) =>
@@ -230,6 +239,38 @@
         });
         if (!Array.isArray(data.records)) throw Error('收藏同步响应无效，请重试');
         merged = root.WordMemo.mergeFavorites(merged, data.records);
+      }
+      saveConfig({ ...config(), lastProgressSync: new Date().toISOString(), ratingSupported });
+      if (ratingSupported) {
+        const path = '/v2/ratings/' + encodeURIComponent(book),
+          remote = [];
+        let cursor = '';
+        do {
+          const data = await syncRequest(
+            path +
+              '?fingerprint=' +
+              fingerprint +
+              (cursor ? '&cursor=' + encodeURIComponent(cursor) : ''),
+          );
+          if (data.ratingSync !== true || !Array.isArray(data.records))
+            throw Error('智能复习同步响应无效');
+          remote.push(...data.records);
+          cursor = data.next || '';
+        } while (cursor);
+        const latestState = root.ieltsSyncState();
+        if (!latestState || latestState.deck.bookId !== book)
+          throw Error('同步期间词库已改变，请重试');
+        merged = root.mergeRatingState(
+          { ...merged, ratingEvents: latestState.ratingEvents || [] },
+          remote,
+        );
+        const known = new Map(remote.map((event) => [event.eventId, event]));
+        const uploads = merged.ratingEvents.filter((event) => !known.has(event.eventId));
+        for (let i = 0; i < uploads.length; i += 100)
+          await syncRequest(path, { fingerprint, events: uploads.slice(i, i + 100) });
+        saveConfig({ ...config(), lastRatingSync: new Date().toISOString() });
+      } else if ((root.ieltsSyncState()?.ratingEvents || []).length) {
+        throw Error('学习进度和收藏已同步；智能复习记录尚未同步，请更新后端。评分仍保存在本地');
       }
       lastError = '';
       const latest = config();

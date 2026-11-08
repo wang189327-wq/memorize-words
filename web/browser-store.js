@@ -135,7 +135,7 @@
       if (current) return JSON.stringify(current);
       const raw = (await get('state')) || localStorage.getItem('ielts75-state-v1');
       if (!raw) return '';
-      const migrated = R.normalizeLegacy(root.WordMemo.validateState(JSON.parse(raw)));
+      const migrated = await R.normalizeLegacy(root.WordMemo.validateState(JSON.parse(raw)));
       await this.commit(R.patch(migrated, null, true));
       const verified = root.WordMemo.validateState(await read());
       if (
@@ -152,7 +152,7 @@
       return JSON.stringify(verified);
     },
     async save(raw) {
-      const next = R.normalizeLegacy(root.WordMemo.validateState(JSON.parse(raw)));
+      const next = await R.normalizeLegacy(root.WordMemo.validateState(JSON.parse(raw)));
       await this.commit(R.patch(next, null, true));
       return true;
     },

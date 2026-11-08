@@ -9,3 +9,6 @@ gradlew.bat
 LICENSE
 web/config.js
 SOURCE_SHA256.json
+web/vendor/
+web/rating-contract.js
+cloud/rating-contract.cjs

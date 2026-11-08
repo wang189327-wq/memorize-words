@@ -113,7 +113,7 @@ public class MainActivity extends Activity {
                 && assets.contains(name)) {
               try {
                 String mime =
-                    name.endsWith(".js")
+                    (name.endsWith(".js") || name.endsWith(".mjs"))
                         ? "application/javascript"
                         : name.endsWith(".css")
                             ? "text/css"

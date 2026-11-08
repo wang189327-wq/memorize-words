@@ -13,6 +13,7 @@ export const progressSignature = (s) =>
     results: s?.results || [],
     favorites: s?.favorites || {},
     favoriteChanges: s?.favoriteChanges || {},
+    ratingEvents: s?.ratingEvents || [],
   });
 
 export async function persist(next, progressChanged = true, { replace = false } = {}) {
@@ -28,7 +29,7 @@ export async function persist(next, progressChanged = true, { replace = false } 
   try {
     previousDirty = localStorage.getItem('ielts75-sync-dirty');
     if (next.results.some((event) => !event.eventId))
-      next = window.WordMemoRecords.normalizeLegacy(next);
+      next = await window.WordMemoRecords.normalizeLegacy(next);
     const previous = runtime.state;
     const patch = window.WordMemoRecords.patch(next, previous, replace);
     if (!previous || previous.deck !== next.deck) C.validateState(next);
@@ -38,6 +39,7 @@ export async function persist(next, progressChanged = true, { replace = false } 
           ...next,
           learned: Object.fromEntries(patch.puts.learned || []),
           results: (patch.puts.results || []).map(([, value]) => value),
+          ratingEvents: (patch.puts.ratings || []).map(([, value]) => value),
         },
         previous.deck,
       );

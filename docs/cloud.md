@@ -11,7 +11,7 @@
 3. 给函数配置访问该表的角色及最小所需读写权限。`store.cjs`使用FC注入的临时凭据，不需要把长期AccessKey写进代码。
 4. 按`cloud/environment.example.json`配置环境变量，替换全部占位符。签名密钥至少32字符，邀请码自行生成并私人保存。
 5. `IELTS75_ALLOWED_ORIGINS`列出真实网页版HTTPS来源，以及安卓内置来源`https://appassets.androidplatform.net`。这是兼容原部署的变量名，不代表连接任何默认服务器。
-6. 部署后访问`/health`，确认`ok`和`favoritesSync`为true、`booksStored`为false。在应用中填自己的HTTPS函数地址并用邀请码注册所有者账号。
+6. 部署后访问`/health`，确认`ok`、`favoritesSync`和`ratingSync`为true、`booksStored`为false。在应用中填自己的HTTPS函数地址并用邀请码注册所有者账号。
 
 表分区按账号和书籍隔离；学习记录与收藏使用不同排序键。无需把词卡正文、封面或PDF上传云端。
 
@@ -27,5 +27,15 @@
 - `POST /v1/refresh`、`/v1/logout`：设备会话。
 - `GET/POST /v1/progress/:book`：学习日期和复习事件。
 - `GET/POST /v1/favorites/:book`：收藏和取消标记。
+- `GET /v2/capabilities`：认证后的评分协议能力与算法版本。
+- `GET/POST /v2/ratings/:book`：独立评分事件，每批最多100条、每页最多500条，UTC时间与不可变eventId；同ID异内容返回409，不接受词书。
 
-使用Python 3.12及以上版本执行`python tools/package-cloud.py`，脚本在独立临时目录按根锁文件和修补依赖覆盖配置安装生产依赖，再生成`build/cloud/wordmemo-sync-1.4.0.zip`。不会包含图书、测试或环境密钥。不要在cloud目录单独安装，否则可能绕过根目录的依赖修补配置。
+使用Python 3.12及以上版本执行`python tools/package-cloud.py`，脚本在独立临时目录按根锁文件和修补依赖覆盖配置安装生产依赖，再生成`build/cloud/wordmemo-sync-1.5.0.zip`。不会包含图书、测试或环境密钥。不要在cloud目录单独安装，否则可能绕过根目录的依赖修补配置。
+
+## 从1.4后端升级
+
+保留原表、环境变量、函数访问角色及账号，仅更新函数代码和生产依赖。1.5新增`rating:`排序键，沿用已有账号/书籍分区，不清表；旧客户端的v1接口保持兼容。按原方式验收学习和收藏，再使用两台设备离线评分、手动同步，核对今日到期与评分总数。此文档和部署包不代表已操作生产阿里云。
+
+新客户端会先查询评分能力。旧后端返回404时，进度和收藏仍可同步；若有评分未上传，会单独提示并保留本地记录，不能把部分成功显示为全部完成。设置分别显示进度与收藏、智能复习的成功时间。请求批次可重试，eventId去重；Tablestore逐事件CAS确保内容不可变，失败批次可能已提交部分事件，重试不会重复计数。云端不保存可失配的调度缓存，客户端在本地事务中同时提交评分和可重建缓存。
+
+评分日志独立保留，云端存储量随实际复习增加；旧results的50000条展示上限不删除评分。协议不会自动改变现有服务套餐或付费设置。

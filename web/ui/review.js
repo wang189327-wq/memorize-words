@@ -4,6 +4,7 @@ import { runtime } from './runtime.js';
 import { render } from './navigation.js';
 import { addSwipeCard, favoriteButton, sourceText, speak } from './cards.js';
 import { persist } from './state.js';
+import { dueCards, recordRating, feedback } from '../domain/scheduler.js';
 
 export const names = {
   meaning: '看词回忆词义',
@@ -112,7 +113,29 @@ export function renderReview() {
     append(panel, label);
   });
   append(panel, el('div', 'subheading', '选择复习范围'));
+  const due = dueCards(runtime.state),
+    byDue = el('input');
+  byDue.type = 'radio';
+  byDue.name = 'scope';
+  byDue.value = 'due';
+  byDue.checked = runtime.reviewOptions.scope === 'due';
+  append(
+    panel,
+    append(el('label', 'check-row'), byDue, el('span', '', '今日到期 · ' + due.length + ' 个词')),
+  );
+  append(
+    panel,
+    el(
+      'p',
+      'muted',
+      '未做智能复习的已学词等待首次评分；完成后由FSRS安排下次复习。手动复习范围仍可使用。',
+    ),
+  );
   const all = el('input');
+  append(
+    panel,
+    el('p', 'muted', '今日到期中的同词多题每轮只计一次长期复习，采用本轮最低的回忆评分。'),
+  );
   all.type = 'radio';
   all.name = 'scope';
   all.value = 'all';
@@ -236,13 +259,15 @@ export function renderReview() {
     '开始复习',
     () => {
       try {
-        const cards = C.selectWords(runtime.state, {
-          scope: runtime.reviewOptions.scope,
-          count: Number(favorites.checked ? favoriteCount.value : count.value),
-          date: select.value,
-          fromWord: fromWord.value,
-          toWord: toWord.value,
-        });
+        const cards = byDue.checked
+          ? due.slice(0, Math.max(1, Number(count.value) || 1))
+          : C.selectWords(runtime.state, {
+              scope: runtime.reviewOptions.scope,
+              count: Number(favorites.checked ? favoriteCount.value : count.value),
+              date: select.value,
+              fromWord: fromWord.value,
+              toWord: toWord.value,
+            });
         const built = C.buildQuestions(cards, runtime.reviewOptions.modes);
         runtime.session = {
           ...built,
@@ -250,6 +275,8 @@ export function renderReview() {
           wordCount: cards.length,
           answers: [],
           revealed: false,
+          scheduled: byDue.checked,
+          wordRatings: {},
         };
         render();
         window.scrollTo(0, 0);
@@ -261,13 +288,15 @@ export function renderReview() {
   );
   function updateScope() {
     runtime.reviewOptions.scope = panel.querySelector('input[name=scope]:checked').value;
-    count.disabled = !all.checked;
+    count.disabled = !(all.checked || byDue.checked);
+    count.max = String(byDue.checked ? due.length : total);
     select.disabled = !byDate.checked;
     favoriteCount.disabled = !favorites.checked;
     fromWord.disabled = toWord.disabled = !favoriteRange.checked;
     start.disabled = favorites.checked || favoriteRange.checked ? favoriteTotal === 0 : total === 0;
+    if (byDue.checked) start.disabled = due.length === 0;
   }
-  for (const radio of [all, byDate, favorites, favoriteRange]) radio.onchange = updateScope;
+  for (const radio of [byDue, all, byDate, favorites, favoriteRange]) radio.onchange = updateScope;
   updateScope();
   append(panel, start);
   if (!total && !favoriteTotal)
@@ -391,11 +420,13 @@ export function renderQuestion() {
       append(
         panel,
         append(el('div', 'answer-box'), el('strong', '', c.meaning), el('p', '', c.definition)),
-        append(
-          el('div', 'actions'),
-          btn('没记住', () => submitResult(false)),
-          btn('记得', () => submitResult(true), 'primary'),
-        ),
+        runtime.session.scheduled
+          ? ratingButtons(true)
+          : append(
+              el('div', 'actions'),
+              btn('没记住', () => submitResult(false)),
+              btn('记得', () => submitResult(true), 'primary'),
+            ),
       );
     }
   } else if (!runtime.session.revealed) {
@@ -452,7 +483,9 @@ export function renderQuestion() {
       panel,
       box,
       btn('▶ 听读单词', () => speak(c.word, 'en-GB'), 'audio'),
-      btn('下一题', () => submitResult(runtime.session.correct), 'primary wide'),
+      runtime.session.scheduled
+        ? ratingButtons(runtime.session.correct)
+        : btn('下一题', () => submitResult(runtime.session.correct), 'primary wide'),
     );
   }
   append(host, panel);
@@ -483,14 +516,51 @@ export async function recordResult(correct) {
   return true;
 }
 
-export async function submitResult(correct) {
-  if (!(await recordResult(correct))) return;
-  runtime.session.index++;
-  runtime.session.recorded = false;
-  runtime.session.revealed = false;
-  runtime.session.userAnswer = '';
-  render();
-  window.scrollTo(0, 0);
+function ratingButtons(correct) {
+  const actions = el('div', 'actions rating-actions');
+  const grades = correct ? [1, 2, 3, 4] : [1];
+  for (const rating of grades)
+    append(
+      actions,
+      btn(
+        feedback[rating],
+        () => submitResult(rating !== 1, rating),
+        rating === 3 ? 'primary' : '',
+      ),
+    );
+  return actions;
+}
+
+export async function submitResult(correct, rating) {
+  const session = runtime.session;
+  if (session.submitting) return;
+  session.submitting = true;
+  try {
+    if (!(await recordResult(correct))) return;
+    if (session.scheduled) {
+      if (!Number.isInteger(rating) || rating < 1 || rating > 4)
+        throw Error('请选择本词的回忆程度。');
+      const question = session.questions[session.index];
+      const combined = Math.min(session.wordRatings[question.id] || 4, rating);
+      if (session.questions[session.index + 1]?.id !== question.id) {
+        const next = recordRating(runtime.state, {
+          id: question.id,
+          rating: combined,
+          mode: question.mode,
+        });
+        if (!(await persist(next))) return;
+      }
+      session.wordRatings[question.id] = combined;
+    }
+    session.index++;
+    session.recorded = false;
+    session.revealed = false;
+    session.userAnswer = '';
+    render();
+    window.scrollTo(0, 0);
+  } finally {
+    session.submitting = false;
+  }
 }
 
 export function renderResults() {

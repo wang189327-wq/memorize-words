@@ -32,7 +32,7 @@ const { setup, snapshot } = require('./helpers.cjs');
     const chunks = [];
     for await (const chunk of stream) chunks.push(chunk);
     const raw = Buffer.concat(chunks).toString('utf8');
-    assert.equal(JSON.parse(raw).deck.cards.length, 6);
+    assert.equal(require('../../web/core.js').importBackup(JSON.parse(raw)).deck.cards.length, 6);
     page.on('dialog', (dialog) => dialog.accept());
     await page.evaluate(async (raw) => window.onNativeImport(raw, 'restore'), raw);
     assert.equal((await snapshot(page)).deck.cards.length, 6);

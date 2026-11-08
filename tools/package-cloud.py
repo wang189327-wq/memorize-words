@@ -18,14 +18,14 @@ with tempfile.TemporaryDirectory(prefix='wordmemo-cloud-') as temporary:
     (staging / 'cloud').mkdir()
     for name in ['package.json', 'package-lock.json']:
         shutil.copy2(root / name, staging / name)
-    for name in ['server.cjs', 'store.cjs', 'package.json']:
+    for name in ['server.cjs', 'store.cjs', 'rating-contract.cjs', 'package.json']:
         shutil.copy2(root / 'cloud' / name, staging / 'cloud' / name)
     npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
     if not npm:
         raise RuntimeError('npm is required')
     subprocess.run([npm, 'ci', '--omit=dev', '--ignore-scripts', '--no-audit', '--no-fund'], cwd=staging, check=True)
     with zipfile.ZipFile(archive, 'w', zipfile.ZIP_DEFLATED) as bundle:
-        for name in ['server.cjs', 'store.cjs', 'package.json']:
+        for name in ['server.cjs', 'store.cjs', 'rating-contract.cjs', 'package.json']:
             bundle.write(staging / 'cloud' / name, name)
         for directory, dirs, files in os.walk(staging / 'node_modules', followlinks=False):
             # Do not follow links in dependency caches.

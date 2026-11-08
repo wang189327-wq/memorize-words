@@ -43,13 +43,20 @@ test('record layout retains source, plan, cursor and favorite cancellation on re
   assert.equal(rebuilt.cursor, state.cursor);
   assert.deepEqual(rebuilt.deck, demo);
 });
-test('reordered cloned history uses safe keyed diff; legacy IDs are allocated once', () => {
+test('reordered cloned history uses safe keyed diff; legacy IDs are allocated once', async () => {
   const state = { ...C.emptyState(demo), results: [event(1), event(2)] };
   const next = { ...state, results: structuredClone([state.results[1], state.results[0]]) };
   assert.equal(R.patch(next, state).puts.results, undefined);
   const legacy = { ...state, results: [{ ...event(1), eventId: undefined }] };
-  const normalized = R.normalizeLegacy(legacy);
-  assert.match(normalized.results[0].eventId, /^[a-f0-9-]{36}$/);
-  assert.equal(R.normalizeLegacy(normalized).results[0].eventId, normalized.results[0].eventId);
+  const normalized = await R.normalizeLegacy(legacy);
+  assert.match(normalized.results[0].eventId, /^legacy-[a-f0-9]{64}$/);
+  assert.equal(
+    (await R.normalizeLegacy(normalized)).results[0].eventId,
+    normalized.results[0].eventId,
+  );
+  assert.equal(
+    (await R.normalizeLegacy(structuredClone(legacy))).results[0].eventId,
+    normalized.results[0].eventId,
+  );
   assert.equal(legacy.results[0].eventId, undefined);
 });

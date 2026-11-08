@@ -355,6 +355,22 @@ export function renderSyncSettings() {
       el(
         'p',
         'muted',
+        cfg.lastProgressSync
+          ? '进度与收藏：' + new Date(cfg.lastProgressSync).toLocaleString()
+          : '进度与收藏尚未同步',
+      ),
+      el(
+        'p',
+        'muted',
+        cfg.ratingSupported === false
+          ? '智能复习：需更新同步后端'
+          : cfg.lastRatingSync
+            ? '智能复习：' + new Date(cfg.lastRatingSync).toLocaleString()
+            : '智能复习尚未同步',
+      ),
+      el(
+        'p',
+        'muted',
         cfg.lastSync ? '上次同步：' + new Date(cfg.lastSync).toLocaleString() : '尚未同步',
       ),
       btn(

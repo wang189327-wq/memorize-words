@@ -16,13 +16,26 @@
   const metadata = (state) =>
     Object.fromEntries(Object.entries(state).filter(([key]) => !recordKeys.has(key)));
   const same = (a, b) => a === b || JSON.stringify(a) === JSON.stringify(b);
-  function normalizeLegacy(state) {
-    return {
-      ...state,
-      results: state.results.map((event) =>
-        event.eventId ? event : { ...event, eventId: crypto.randomUUID() },
-      ),
-    };
+  async function normalizeLegacy(state) {
+    const results = state.results.slice();
+    // Same old backup on two devices must get the same IDs. Match the legacy sync hash,
+    // then persist it once so later array reordering never assigns a different ID.
+    for (let start = 0; start < results.length; start += 256) {
+      await Promise.all(
+        results.slice(start, start + 256).map(async (event, offset) => {
+          if (event.eventId) return;
+          const digest = await crypto.subtle.digest(
+            'SHA-256',
+            new TextEncoder().encode(JSON.stringify(event) + '|' + (start + offset)),
+          );
+          const hex = Array.from(new Uint8Array(digest), (byte) =>
+            byte.toString(16).padStart(2, '0'),
+          ).join('');
+          results[start + offset] = { ...event, eventId: 'legacy-' + hex };
+        }),
+      );
+    }
+    return { ...state, results };
   }
   function rows(state) {
     return {

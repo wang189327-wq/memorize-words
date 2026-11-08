@@ -12,13 +12,14 @@ async function setup() {
       response.writeHead(403).end();
       return;
     }
-    const type = file.endsWith('.js')
-      ? 'application/javascript'
-      : file.endsWith('.json')
-        ? 'application/json'
-        : file.endsWith('.css')
-          ? 'text/css'
-          : 'text/html';
+    const type =
+      file.endsWith('.js') || file.endsWith('.mjs')
+        ? 'application/javascript'
+        : file.endsWith('.json')
+          ? 'application/json'
+          : file.endsWith('.css')
+            ? 'text/css'
+            : 'text/html';
     fs.readFile(file, (error, bytes) => {
       if (error) response.writeHead(404).end();
       else response.writeHead(200, { 'Content-Type': type }).end(bytes);

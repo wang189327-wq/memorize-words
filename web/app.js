@@ -5,6 +5,7 @@ import { $, C, append, btn, el, host, toast } from './ui/dom.js';
 import { cloudMode, persist, progressSignature, rebuildQueue } from './ui/state.js';
 import { finishApp, render, setTab } from './ui/navigation.js';
 import { importData, requestImport, updateBundledDeck } from './ui/backup.js';
+import { restoreScheduler, mergeRatings } from './domain/scheduler.js';
 
 try {
   const saved = JSON.parse(localStorage.getItem(appearanceKey) || '{}');
@@ -14,10 +15,14 @@ try {
 
 applyAppearance();
 
+window.mergeRatingState = (state, events) => mergeRatings(state, events);
 window.onCloudSyncSaved = async (s) => {
-  const latest = C.mergeFavorites(
-    C.mergeProgress(runtime.state, s),
-    Object.entries(s.favoriteChanges || {}).map(([id, r]) => ({ id, ...r })),
+  const latest = mergeRatings(
+    C.mergeFavorites(
+      C.mergeProgress(runtime.state, s),
+      Object.entries(s.favoriteChanges || {}).map(([id, r]) => ({ id, ...r })),
+    ),
+    s.ratingEvents || [],
   );
   if (!(await persist(latest))) return false;
   localStorage.setItem(
@@ -92,12 +97,13 @@ window.onNativeStatus = (t) => toast(t);
 window.ieltsSyncState = () => runtime.state;
 
 window.ieltsApplySync = async (next, migrate = false) => {
-  const merged = migrate
+  const base = migrate
     ? next
     : C.mergeFavorites(
         C.mergeProgress(runtime.state, next),
         Object.entries(next.favoriteChanges || {}).map(([id, r]) => ({ id, ...r })),
       );
+  const merged = mergeRatings(base, next.ratingEvents || []);
   if (!(await persist(merged))) return false;
   rebuildQueue();
   if (!runtime.session) render();
@@ -128,9 +134,9 @@ for (const name of ['learn', 'review', 'library', 'settings'])
         : localStorage.getItem('ielts75-state-v1');
     if (raw) {
       try {
-        runtime.state = C.validateState(JSON.parse(raw));
+        runtime.state = restoreScheduler(C.validateState(JSON.parse(raw)));
         if (window.AndroidStore?.needsMigration?.()) {
-          const migrated = window.WordMemoRecords.normalizeLegacy(runtime.state);
+          const migrated = await window.WordMemoRecords.normalizeLegacy(runtime.state);
           if (!window.AndroidStore.save(JSON.stringify(migrated)))
             throw Error('存储迁移未完成，已保留旧记录。');
           runtime.state = migrated;
@@ -154,7 +160,7 @@ for (const name of ['learn', 'review', 'library', 'settings'])
         );
         window.onNativeImport = async (text) => {
           try {
-            const next = C.validateState(JSON.parse(text));
+            const next = restoreScheduler(C.importBackup(JSON.parse(text)));
             if (confirm('确认使用这份备份恢复？') && (await persist(next))) {
               rebuildQueue();
               render();

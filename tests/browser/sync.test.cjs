@@ -17,6 +17,7 @@ const { setup, snapshot } = require('./helpers.cjs');
   );
   await new Promise((resolve) => backend.listen(0, '127.0.0.1', resolve));
   let oldBackend = false,
+    oldRatingBackend = false,
     pauseNext = false,
     arrived,
     release;
@@ -32,6 +33,8 @@ const { setup, snapshot } = require('./helpers.cjs');
           'Access-Control-Allow-Headers': 'Authorization, Content-Type',
         };
         if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+        if (oldRatingBackend && url.pathname.startsWith('/v2/'))
+          return route.fulfill({ status: 404, headers, json: { error: 'old rating fixture' } });
         if (oldBackend && url.pathname.startsWith('/v1/favorites/'))
           return route.fulfill({ status: 404, headers, json: { error: 'old fixture server' } });
         if (pauseNext && request.method() === 'POST' && url.pathname.startsWith('/v1/favorites/')) {
@@ -102,6 +105,33 @@ const { setup, snapshot } = require('./helpers.cjs');
     await sync(b);
     assert.deepEqual((await snapshot(a)).favorites, (await snapshot(b)).favorites);
 
+    const rateWord = (page, rating) =>
+      page.evaluate(async (rating) => {
+        const { runtime } = await import('/ui/runtime.js'),
+          { persist } = await import('/ui/state.js');
+        const { recordRating } = await import('/domain/scheduler.js');
+        const learned = window.WordMemo.markLearned(runtime.state, 'demo-focus', '2026-11-01');
+        return persist(recordRating(learned, { id: 'demo-focus', mode: 'meaning', rating }));
+      }, rating);
+    await rateWord(a, 3);
+    await rateWord(b, 1);
+    await sync(a);
+    await sync(b);
+    await sync(a);
+    assert.equal((await snapshot(a)).ratingEvents.length, 2);
+    assert.deepEqual((await snapshot(a)).schedules, (await snapshot(b)).schedules);
+    await rateWord(a, 4);
+    oldRatingBackend = true;
+    await assert.rejects(sync(a), /智能复习记录尚未同步/);
+    assert.equal((await snapshot(a)).ratingEvents.length, 3);
+    assert.ok(await a.evaluate(() => window.WordMemoSync.config().lastProgressSync));
+    assert.equal(await a.evaluate(() => window.hasUnsavedCloudProgress()), true);
+    oldRatingBackend = false;
+    await sync(a);
+    await sync(b);
+    assert.deepEqual((await snapshot(a)).schedules, (await snapshot(b)).schedules);
+    assert.equal((await snapshot(b)).ratingEvents.length, 3);
+
     await toggle(a, 'demo-observe');
     oldBackend = true;
     await assert.rejects(sync(a), /先部署1.4/);
@@ -113,7 +143,7 @@ const { setup, snapshot } = require('./helpers.cjs');
     assert.deepEqual((await snapshot(a)).favorites, (await snapshot(b)).favorites);
     assert.deepEqual(app.errors, []);
     console.log(
-      'Browser sync PASS: real IndexedDB + local HTTP, two isolated devices, add/remove, in-flight edits, failed old backend and retry; not live cloud',
+      'Browser sync PASS: two isolated IndexedDB devices + HTTP, favorites, concurrent ratings, deterministic schedules, old-backend partial status and retry; not live cloud',
     );
   } finally {
     await app.close();
