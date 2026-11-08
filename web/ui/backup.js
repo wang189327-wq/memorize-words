@@ -36,7 +36,7 @@ export async function importData(raw, kind) {
         next = merged.state;
       }
     }
-    if (await persist(next)) {
+    if (await persist(next, true, { replace: kind === 'restore' })) {
       runtime.session = null;
       rebuildQueue();
       render();

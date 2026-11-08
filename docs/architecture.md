@@ -16,10 +16,11 @@
 | `web/ui/backup.js`                  | 导入、导出和内置示例更新                                             |
 | `web/ui/navigation.js`              | 页面切换及渲染调度                                                   |
 | `web/app.js`                        | 初始化及Android/同步回调注册                                         |
-| `web/browser-store.js`              | IndexedDB单份最新快照及旧本地格式迁移                                |
+| `web/browser-store.js`              | IndexedDB分表事务及旧快照迁移                                        |
+| `web/storage/records.js`            | 纯数据行布局、增量补丁、启动时重建；浏览器和原生共用                 |
 | `web/sync.js`                       | 手动同步协议、分批传输及失败重试状态                                 |
 | `web/update.js`                     | 可选更新清单检查与下载入口                                           |
-| `android/.../LearningStorage.java`  | 原生AtomicFile快照                                                   |
+| `android/.../LearningStorage.java`  | 原生SQLite行事务、旧AtomicFile读取和迁移                             |
 | `android/.../SpeechController.java` | 系统TTS及口音选择                                                    |
 | `android/.../AppUpdater.java`       | 下载验证及系统安装入口                                               |
 | `cloud/server.cjs`、`store.cjs`     | HTTP接口与Tablestore存储适配                                         |
@@ -30,7 +31,11 @@
 
 浏览器的`BrowserStore.save`返回Promise，不得当作立即成功的布尔值。Android桥接写入本身同步完成，也经同一个异步提交入口使用。新增页面时不要绕过此入口直接修改`runtime.state`或写数据库。
 
-IndexedDB只维护当前快照；旧迁移键在成功保存后清理。用户手动导出的完整备份不受清理影响。原生更新器只清理专用APK缓存，不访问学习文件。
+存储按books、learned、results、favorites、ratings、schedules及metadata分开。IndexedDB使用独立object store；原生SQLite用(store,id)复合主键保存相同JSON行。普通复习仅写入新增结果和小型元数据，不重写词书。`WordMemoRecords.patch(next, previous, replace)`是平台共用契约；传入状态应不可变，不能先修改旧对象再提交。
+
+旧schema1快照在导入入口完整验证，旧复习事件只在迁移时分配稳定ID。新事务提交并核验后才移除旧快照；失败保留原数据。正常提交只验证变更行和当前安排，不再次遍历词书全文。恢复完整备份使用显式replace；更换书籍需要原有确认。用户手动导出的完整备份不受清理影响。原生更新器只清理专用APK缓存，不访问学习文件。
+
+浏览器在versionchange时关闭旧连接，遇到blocked时提示关闭旧标签后刷新；不得删除数据库绕开升级阻塞。`tests/browser/storage.test.cjs`通过真实IndexedDB异常验证事务回滚、旧数据保留、ID稳定和单条事件提交。`LearningStorageTest`通过Robolectric运行SQLite事务测试，属于电脑模拟，并非实体安卓验证。CPU与序列化载荷基准命令为`node tools/benchmark-storage.mjs`，不代表手机磁盘耗时。
 
 ## 平台接口
 

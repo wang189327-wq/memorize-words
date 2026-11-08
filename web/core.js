@@ -182,7 +182,7 @@
       cursor: null,
     };
   }
-  function validateState(s) {
+  function validateState(s, validatedDeck) {
     if (
       !plain(s) ||
       s.schemaVersion !== 1 ||
@@ -191,7 +191,7 @@
       s.results.length > 50000
     )
       fail('备份格式无效。');
-    validateDeck(s.deck);
+    if (s.deck !== validatedDeck) validateDeck(s.deck);
     const ids = new Set(s.deck.cards.map((c) => c.id));
     if (
       s.favorites !== undefined &&

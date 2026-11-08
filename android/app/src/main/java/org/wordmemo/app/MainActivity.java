@@ -230,6 +230,16 @@ public class MainActivity extends Activity {
     }
 
     @JavascriptInterface
+    public boolean commit(String patch) {
+      return storage.commit(patch);
+    }
+
+    @JavascriptInterface
+    public boolean needsMigration() {
+      return storage.needsMigration();
+    }
+
+    @JavascriptInterface
     public boolean protectCurrent() {
       return storage.hasValidState();
     }
@@ -343,6 +353,7 @@ public class MainActivity extends Activity {
       web.destroy();
       web = null;
     }
+    if (storage != null) storage.close();
     super.onDestroy();
   }
 

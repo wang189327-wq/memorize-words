@@ -15,7 +15,7 @@ export const progressSignature = (s) =>
     favoriteChanges: s?.favoriteChanges || {},
   });
 
-export async function persist(next, progressChanged = true) {
+export async function persist(next, progressChanged = true, { replace = false } = {}) {
   if (runtime.saving) {
     toast('正在保存，请稍后再试。');
     return false;
@@ -27,16 +27,32 @@ export async function persist(next, progressChanged = true) {
     markedDirty = false;
   try {
     previousDirty = localStorage.getItem('ielts75-sync-dirty');
-    C.validateState(next);
-    const raw = JSON.stringify(next);
+    if (next.results.some((event) => !event.eventId))
+      next = window.WordMemoRecords.normalizeLegacy(next);
+    const previous = runtime.state;
+    const patch = window.WordMemoRecords.patch(next, previous, replace);
+    if (!previous || previous.deck !== next.deck) C.validateState(next);
+    else
+      C.validateState(
+        {
+          ...next,
+          learned: Object.fromEntries(patch.puts.learned || []),
+          results: (patch.puts.results || []).map(([, value]) => value),
+        },
+        previous.deck,
+      );
     if (progressChanged && cloudMode()) {
       localStorage.setItem('ielts75-sync-dirty', '1');
       markedDirty = true;
     }
-    if (window.AndroidStore) {
-      if (!window.AndroidStore.save(raw)) throw Error('本地保存失败，请先导出备份并检查设备空间。');
-    } else if (window.BrowserStore) await window.BrowserStore.save(raw);
-    else localStorage.setItem('ielts75-state-v1', raw);
+    if (window.AndroidStore?.commit) {
+      if (!window.AndroidStore.commit(JSON.stringify(patch)))
+        throw Error('本地事务保存失败，请检查设备空间。');
+    } else if (window.AndroidStore) {
+      if (!window.AndroidStore.save(JSON.stringify(next)))
+        throw Error('本地保存失败，请先导出备份并检查设备空间。');
+    } else if (window.BrowserStore) await window.BrowserStore.commit(patch);
+    else localStorage.setItem('ielts75-state-v1', JSON.stringify(next));
     runtime.state = next;
     return true;
   } catch (error) {

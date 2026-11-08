@@ -129,6 +129,12 @@ for (const name of ['learn', 'review', 'library', 'settings'])
     if (raw) {
       try {
         runtime.state = C.validateState(JSON.parse(raw));
+        if (window.AndroidStore?.needsMigration?.()) {
+          const migrated = window.WordMemoRecords.normalizeLegacy(runtime.state);
+          if (!window.AndroidStore.save(JSON.stringify(migrated)))
+            throw Error('存储迁移未完成，已保留旧记录。');
+          runtime.state = migrated;
+        }
       } catch (e) {
         host.textContent =
           '本地记录无法读取，已保留原始文件。请先使用下方按钮导出，再尝试恢复有效备份。';
@@ -165,8 +171,8 @@ for (const name of ['learn', 'review', 'library', 'settings'])
       if (response.ok) {
         const d = await response.json();
         if (d.cards?.length) {
-          runtime.state = C.emptyState(d);
-          if (!(await persist(runtime.state))) throw Error('无法初始化本地存储。');
+          if (!(await persist(C.emptyState(d), true, { replace: true })))
+            throw Error('无法初始化本地存储。');
         }
       }
     }
