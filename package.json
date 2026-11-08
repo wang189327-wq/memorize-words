@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check:public": "node tools/check-public.mjs",
+    "check:config": "node tools/check-config.mjs",
     "lint": "node tools/lint.mjs"
   },
   "devDependencies": {

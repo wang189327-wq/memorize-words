@@ -98,6 +98,7 @@ PWA：manifest及Service Worker仅用于浏览器，安卓不注册Service Worke
 本轮不开发OCR、云端词书、多活动词库、多用户SaaS或后台每日检查更新，也不更换图标。服务端能力升级不等于擅自修改用户的生产云端配置。
 
 参考：
+
 - https://github.com/open-spaced-repetition/ts-fsrs
 - https://github.com/open-spaced-repetition/awesome-fsrs/wiki/The-Algorithm
 - https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/deriveKey

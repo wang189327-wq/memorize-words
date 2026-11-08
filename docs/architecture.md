@@ -43,3 +43,9 @@ IndexedDB只维护当前快照；旧迁移键在成功保存后清理。用户�
 旧1.4备份的`schemaVersion: 1`、`sjj-`词条ID和`source.sentence`仍可读取。本地存储键及后端环境变量保留历史`ielts75`前缀，避免无必要的数据迁移；它们不是访问个人服务器的配置。
 
 当前是单活动词库、单所有者自部署后端。若要增加多用户服务或同时切换多本词库，应先设计账号/书籍隔离及迁移测试，不能只放宽一个注册判断。
+
+## Fork及浏览器资源策略
+
+`tools/check-config.mjs`导出的`checkConfig(config, repository)`可独立测试；CI使用GitHub提供的`GITHUB_REPOSITORY`，Fork保留原项目更新地址时失败。Fork可关闭更新，或同时改成自己的清单与Release地址，并使用自己的包名与签名。该检查防误配置，不能阻止维护者主动修改检查脚本。
+
+`web/index.html`的meta CSP限制脚本同源，禁止eval、插件及表单外发。允许内联样式是为了现有动态主题与字号，不同时放开内联脚本。`img-src data: blob:`支持本地封面；`connect-src https:`支持用户自部署的HTTPS同步服务器及更新清单，并不将网络限制为某个固定云端。修改策略需验证备份导入导出、主题字号、云同步及安卓WebView；meta方式不具备全部响应头CSP能力。
