@@ -11,6 +11,18 @@ const event = (i) => ({
   eventId: `record-event-${String(i).padStart(6, '0')}`,
 });
 
+test('complete backups reject duplicate or invalid result IDs before keyed storage can collapse them', () => {
+  const state = { ...C.emptyState(demo), results: [event(1), { ...event(1), correct: false }] };
+  assert.throws(
+    () => C.importBackup({ format: 'memorize-words-backup', schemaVersion: 2, state }),
+    /重复/,
+  );
+  assert.throws(
+    () => C.validateState({ ...state, results: [{ ...event(1), eventId: 'short' }] }),
+    /事件ID/,
+  );
+});
+
 test('bounded result append produces one insert and one delete without serializing the book', () => {
   const state = {
     ...C.emptyState(demo),

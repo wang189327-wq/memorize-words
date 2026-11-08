@@ -45,3 +45,9 @@ Android工具对中文路径的支持存在版本差异。本轮在Windows中文
 可通过环境变量`WORDMEMO_KEYSTORE`、`WORDMEMO_KEYSTORE_PASSWORD`、`WORDMEMO_KEY_ALIAS`传入自己的签名，然后执行`./gradlew clean assembleRelease`。未提供时输出未签名的release包。不要把凭据写入Gradle文件。
 
 私人本地构建可附加`-PwordmemoBookPath=词库JSON绝对路径`替换内置示例。公开构建不传此参数，必须只含6张原创示例卡；私人词库与含私人词库的安装包不得上传公开仓库或Release。
+
+## 隔离目录正式构建
+
+设置长期签名的WORDMEMO_KEYSTORE、WORDMEMO_KEYSTORE_PASSWORD、WORDMEMO_KEY_ALIAS后，执行python tools/build-android.py --release。未提供签名时文件名明确标注release-unsigned。公开包只含6张示例卡。
+
+仅本地私人变体可附加--book 词库JSON绝对路径及--app-name 自己的名称；工具只修改临时副本。私人APK单独命名-private，不上传公开Release。--skip-tests只供同一源码已通过测试后的第二份资源变体使用。签名和密码不写入源码、命令历史或公开包。

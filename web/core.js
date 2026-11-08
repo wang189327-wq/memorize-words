@@ -222,6 +222,7 @@
     for (const [id, r] of Object.entries(s.learned)) {
       if (!ids.has(id) || !plain(r) || !dateOK(r.date)) fail('备份含无效学习记录。');
     }
+    const resultIds = new Set();
     for (const r of s.results) {
       if (
         !plain(r) ||
@@ -231,6 +232,15 @@
         !dateOK(r.date)
       )
         fail('备份含无效复习记录。');
+      if (r.eventId !== undefined) {
+        if (
+          typeof r.eventId !== 'string' ||
+          !/^[-a-zA-Z0-9]{16,128}$/.test(r.eventId) ||
+          resultIds.has(r.eventId)
+        )
+          fail('备份含无效或重复的复习事件ID。');
+        resultIds.add(r.eventId);
+      }
     }
     if (s.cursor !== null && s.cursor !== undefined && !ids.has(s.cursor))
       fail('备份含无效学习位置。');

@@ -7,6 +7,9 @@
 ```sh
 npm run configure
 npm run format
+npm run generate
+npm run check:config
+npm run check:generated
 npm run lint
 npm run check:public
 npm test
@@ -19,3 +22,13 @@ npm test
 测试使用原创夹具，不依赖私人书籍、电脑用户名、Codex安装位置或真实账号。添加功能时覆盖失败和恢复路径，尤其是写入失败、取消操作、旧备份及同步期间的并发修改。
 
 不要提交`node_modules`、SDK/JDK、签名私钥、真实环境变量、学习记录和商业图书。导入格式变化时保持旧备份可读，或提供明确的迁移步骤。
+
+## 常见修改入口
+
+- 存储：storage/records.js定义补丁；browser-store.js与LearningStorage.java实现事务。恢复/词库变更推进generation，旧标签必须刷新，不能删除该检查。
+- 调度：domain/scheduler.js定义固定参数，domain/rating-contract.js定义协议。参数或协议变化须有版本与迁移。
+- 备份：domain/backup-crypto.js负责密码封装，ui/backup-password.js只负责临时密码，ui/backup.js解包、验证与确认后再提交。密码不得进入runtime、日志或持久化。
+- 离线：tools/build-offline.mjs生成静态清单，web/sw.js只管理外壳。API响应、用户词书、令牌和APK不能缓存。
+- 复制：ui/clipboard.js维护输出格式与浏览器/原生适配，MainActivity提供原生剪贴板接口。
+
+修改源码后先格式化，再运行npm run generate；生成文件位于web/vendor、web/rating-contract.js、cloud/rating-contract.cjs及web/offline-assets.js，不手改生成结果。README产品截图由node tools/capture-demo.cjs生成，只使用原创示例和虚构进度。

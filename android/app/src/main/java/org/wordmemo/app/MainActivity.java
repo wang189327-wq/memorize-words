@@ -194,6 +194,21 @@ public class MainActivity extends Activity {
 
   private class Store {
     @JavascriptInterface
+    public boolean copyText(String text) {
+      if (text == null
+          || text.isEmpty()
+          || text.getBytes(StandardCharsets.UTF_8).length > 512 * 1024) return false;
+      try {
+        android.content.ClipboardManager clipboard =
+            (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("词记单词", text));
+        return true;
+      } catch (Exception error) {
+        return false;
+      }
+    }
+
+    @JavascriptInterface
     public void downloadUpdate(String url, String sha, int target) {
       updater.download(url, sha, target);
     }

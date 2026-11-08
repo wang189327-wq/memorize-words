@@ -5,6 +5,7 @@ import { render } from './navigation.js';
 import { addSwipeCard, favoriteButton, sourceText, speak } from './cards.js';
 import { persist } from './state.js';
 import { dueCards, recordRating, feedback } from '../domain/scheduler.js';
+import { openWordCopy } from './clipboard.js';
 
 export const names = {
   meaning: '看词回忆词义',
@@ -51,6 +52,9 @@ export function renderHistoryDay() {
     el('p', 'muted', '共 ' + cards.length + ' 个新词 · 按书本顺序'),
   );
   const list = el('div', 'word-list');
+  const copy = btn('复制当日单词', () => openWordCopy(cards), 'wide');
+  copy.disabled = cards.length === 0;
+  append(host, copy);
   list.id = 'history-word-list';
   for (const c of cards) {
     const b = btn(

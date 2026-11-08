@@ -54,3 +54,11 @@
 `tools/check-config.mjs`导出的`checkConfig(config, repository)`可独立测试；CI使用GitHub提供的`GITHUB_REPOSITORY`，Fork保留原项目更新地址时失败。Fork可关闭更新，或同时改成自己的清单与Release地址，并使用自己的包名与签名。该检查防误配置，不能阻止维护者主动修改检查脚本。
 
 `web/index.html`的meta CSP限制脚本同源，禁止eval、插件及表单外发。允许内联样式是为了现有动态主题与字号，不同时放开内联脚本。`img-src data: blob:`支持本地封面；`connect-src https:`支持用户自部署的HTTPS同步服务器及更新清单，并不将网络限制为某个固定云端。修改策略需验证备份导入导出、主题字号、云同步及安卓WebView；meta方式不具备全部响应头CSP能力。
+
+## 离线、备份与并发恢复
+
+浏览器存储的generation只在适配器和数据库元数据中保留，不进入可移植备份。恢复或更新词库时推进generation；陈旧标签页的提交被拒绝，避免旧词卡写进新词库。原生全量恢复走save（验证并清理旧文件），普通进度走commit。
+
+密码算法、输入窗口、恢复事务分别位于domain/backup-crypto.js、ui/backup-password.js、ui/backup.js。备份还原成功前不改持久化；密码字段在取消/关闭后清空。
+
+offline.js只在浏览器注册Service Worker；sw.js完整校验所有静态资源后才安装。等待中的更新需用户操作且不能打断当前学习或其他标签页。缓存不含云端响应和用户数据；IndexedDB独立管理记录。首次未缓存不能离线启动，浏览器删除站点数据仍会删除记录。

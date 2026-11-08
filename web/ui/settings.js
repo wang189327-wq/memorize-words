@@ -3,7 +3,8 @@ import { runtime } from './runtime.js';
 import { C, append, btn, el, host, toast } from './dom.js';
 import { render, setTab } from './navigation.js';
 import { cloudMode, rebuildQueue } from './state.js';
-import { exportBackup, requestImport } from './backup.js';
+import { exportBackup, exportEncryptedBackup, requestImport } from './backup.js';
+import { offlineStatus, checkOfflineUpdate } from '../offline.js';
 
 export const appearanceKey = 'ielts75-appearance',
   themes = {
@@ -141,6 +142,7 @@ export function renderSettings() {
         el('section', 'panel'),
         el('h2', '', '本地学习记录'),
         btn('导出完整备份', exportBackup, 'wide primary'),
+        btn('导出加密备份', exportEncryptedBackup, 'wide'),
         btn('从备份恢复', () => requestImport('restore'), 'wide'),
         el(
           'p',
@@ -322,6 +324,18 @@ export function renderAppearanceSettings() {
     'wide',
   );
   append(panel, el('p', 'muted', '当前版本 ' + window.WordMemoUpdate.version), version);
+  if (!window.AndroidStore)
+    append(
+      panel,
+      el('p', 'muted', offlineStatus),
+      btn(
+        '检查离线网页更新',
+        async () => {
+          if (!(await checkOfflineUpdate())) toast('未发现可应用的离线网页更新。');
+        },
+        'wide',
+      ),
+    );
   return panel;
 }
 

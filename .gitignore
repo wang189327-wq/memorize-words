@@ -17,6 +17,8 @@ local.properties
 private/
 private-data/
 learning-state.json
+learning.db
+learning.db-*
 *environment.private*
 playwright-report/
 test-results/

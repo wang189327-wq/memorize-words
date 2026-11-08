@@ -6,6 +6,7 @@ import { cloudMode, persist, progressSignature, rebuildQueue } from './ui/state.
 import { finishApp, render, setTab } from './ui/navigation.js';
 import { importData, requestImport, updateBundledDeck } from './ui/backup.js';
 import { restoreScheduler, mergeRatings } from './domain/scheduler.js';
+import { startOffline } from './offline.js';
 
 try {
   const saved = JSON.parse(localStorage.getItem(appearanceKey) || '{}');
@@ -158,17 +159,7 @@ for (const name of ['learn', 'review', 'library', 'settings'])
           }),
           btn('从备份恢复', () => requestImport('restore')),
         );
-        window.onNativeImport = async (text) => {
-          try {
-            const next = restoreScheduler(C.importBackup(JSON.parse(text)));
-            if (confirm('确认使用这份备份恢复？') && (await persist(next))) {
-              rebuildQueue();
-              render();
-            }
-          } catch (err) {
-            toast(err.message);
-          }
-        };
+        window.onNativeImport = importData;
         return;
       }
       await updateBundledDeck();
@@ -199,6 +190,7 @@ for (const name of ['learn', 'review', 'library', 'settings'])
     host.textContent = '启动失败：' + e.message;
   }
 })();
+startOffline();
 
 // Native Android back navigation calls this explicit interface, not module locals.
 window.onNativeBack = () => {

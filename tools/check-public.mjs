@@ -22,7 +22,9 @@ for (const file of sourceFiles()) {
   if (
     /(?:^|\/)(?:private|private-data|sources|offline-signing|offline-cloud)\//.test(file) ||
     /\.(?:p12|jks|keystore|apk|aab|zip|idsig)$/i.test(file) ||
-    /(?:password\.txt|learning-state\.json|environment\.private|local\.properties)$/.test(file)
+    /(?:password\.txt|learning-state\.json|learning\.db(?:-wal|-shm|-journal)?|environment\.private|local\.properties)$/.test(
+      file,
+    )
   )
     failures.push(`private artifact: ${file}`);
   if (file.endsWith('.jar')) {
@@ -30,7 +32,11 @@ for (const file of sourceFiles()) {
     continue;
   }
   if (file.endsWith('.png')) {
-    if (file !== 'android/app/src/main/res/drawable-nodpi/app_icon.png')
+    if (
+      file !== 'android/app/src/main/res/drawable-nodpi/app_icon.png' &&
+      file !== 'web/icon.png' &&
+      !/^docs\/images\/(learn|review|settings)\.png$/.test(file)
+    )
       failures.push(`unexpected image: ${file}`);
     continue;
   }

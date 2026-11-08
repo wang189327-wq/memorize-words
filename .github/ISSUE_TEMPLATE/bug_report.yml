@@ -1,0 +1,26 @@
+name: 问题反馈
+description: 报告可以复现的问题，请勿上传账号密码、私人词书或完整学习备份。
+body:
+  - type: input
+    id: version
+    attributes:
+      label: 软件版本与使用方式
+      placeholder: 例如 1.1 / Android，或网页版及浏览器版本
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤、预期行为与实际结果
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 设备与环境
+      description: 设备型号、系统版本、是否离线；语音问题请说明引擎和已安装口音。
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 可公开的截图或错误信息
+      description: 请遮盖用户名、服务器地址、邀请码及私人内容。可提供最小原创示例，勿提交完整私人备份。

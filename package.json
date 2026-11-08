@@ -1,6 +1,6 @@
 {
   "name": "memorize-words",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "license": "MIT",
   "description": "Local-first vocabulary learning with optional self-hosted manual sync",
@@ -9,9 +9,9 @@
   },
   "scripts": {
     "start": "node tools/serve.mjs",
-    "configure": "node tools/configure.mjs",
-    "generate": "node tools/vendor-fsrs.mjs",
-    "check:generated": "node tools/vendor-fsrs.mjs --check",
+    "configure": "node tools/configure.mjs && node tools/build-offline.mjs",
+    "generate": "node tools/vendor-fsrs.mjs && node tools/build-offline.mjs",
+    "check:generated": "node tools/vendor-fsrs.mjs --check && node tools/build-offline.mjs --check",
     "test": "node tools/test.mjs",
     "test:unit": "node tools/test.mjs --unit",
     "test:browser": "node tools/test.mjs --browser",

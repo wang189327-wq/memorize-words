@@ -34,7 +34,7 @@ for (const count of [6, 5470]) {
           mode: 'spelling',
           correct: true,
           date: '2026-11-08',
-          eventId: 'last-test-event',
+          eventId: 'last-test-event-0001',
         },
       ].slice(-50000),
     };

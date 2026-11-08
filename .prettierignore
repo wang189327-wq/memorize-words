@@ -12,3 +12,4 @@ SOURCE_SHA256.json
 web/vendor/
 web/rating-contract.js
 cloud/rating-contract.cjs
+web/offline-assets.js

@@ -4,6 +4,7 @@
   if (root.AndroidStore) return;
   const R = root.WordMemoRecords,
     stores = [...R.tables, 'metadata'];
+  let loadedGeneration = null;
   let db,
     pending = 0,
     lastError = null,
@@ -30,17 +31,24 @@
       () =>
         new Promise((resolve, reject) => {
           const tx = db.transaction(names, mode);
-          let result;
+          let result, failure;
+          const abort = (error) => {
+            failure = error;
+            tx.abort();
+          };
           tx.oncomplete = () => resolve(result);
           tx.onerror = tx.onabort = () =>
-            reject(tx.error || Error('本地事务未完成，原记录保持不变。'));
+            reject(failure || tx.error || Error('本地事务未完成，原记录保持不变。'));
           try {
-            action(tx, (value) => {
-              result = value;
-            });
+            action(
+              tx,
+              (value) => {
+                result = value;
+              },
+              abort,
+            );
           } catch (error) {
-            tx.abort();
-            reject(error);
+            abort(error);
           }
         }),
     );
@@ -74,7 +82,8 @@
         meta = {};
       let remaining = stores.length;
       const finish = () => {
-        if (!--remaining) done(R.assemble(data, meta));
+        if (!--remaining)
+          done({ state: R.assemble(data, meta), generation: meta.generation || null });
       };
       for (const name of R.tables) {
         const rows = [];
@@ -95,12 +104,16 @@
       };
     });
   }
-  function write(patch) {
-    return transaction(stores, 'readwrite', (tx) => {
+  function write(patch, expectedGeneration) {
+    return transaction(stores, 'readwrite', (tx, done, abort) => {
       const metadata = tx.objectStore('metadata');
       metadata.get('active').onsuccess = (event) => {
         try {
           const current = event.target.result;
+          if ((current?.generation || null) !== expectedGeneration) {
+            abort(Error('词库已在其他窗口恢复或更新，请刷新后再继续。'));
+            return;
+          }
           if (!patch.replace && current?.bookId !== patch.expectedBookId) {
             tx.abort();
             return;
@@ -110,13 +123,18 @@
             for (const [key, value] of rows) tx.objectStore(table).put(value, key);
           for (const [table, keys] of Object.entries(patch.deletes))
             for (const key of keys) tx.objectStore(table).delete(key);
+          const generation =
+            patch.replace || patch.puts.books?.length
+              ? crypto.randomUUID()
+              : current?.generation || crypto.randomUUID();
           metadata.put(
-            { bookId: patch.bookId, state: patch.metadata || current?.state || {} },
+            { bookId: patch.bookId, generation, state: patch.metadata || current?.state || {} },
             'active',
           );
-        } catch {
+          done(generation);
+        } catch (error) {
           // Exceptions inside IDB callbacks must abort instead of escaping as page errors.
-          tx.abort();
+          abort(error);
         }
       };
     });
@@ -128,16 +146,30 @@
       queued(() =>
         transaction(['records'], 'readwrite', (tx) => tx.objectStore('records').put(value, key)),
       ),
-    commit: (patch) => queued(() => write(patch)),
+    commit(patch) {
+      const expected = loadedGeneration;
+      return queued(async () => {
+        const generation = await write(patch, expected);
+        loadedGeneration = generation;
+      });
+    },
     async load() {
       await chain.catch(() => {});
-      const current = await read();
+      const record = await read();
+      loadedGeneration = record.generation;
+      const current = record.state;
       if (current) return JSON.stringify(current);
       const raw = (await get('state')) || localStorage.getItem('ielts75-state-v1');
       if (!raw) return '';
-      const migrated = await R.normalizeLegacy(root.WordMemo.validateState(JSON.parse(raw)));
+      let legacy;
+      try {
+        legacy = root.WordMemo.validateState(JSON.parse(raw));
+      } catch {
+        return raw;
+      } // Let the application offer raw export/recovery without altering the source.
+      const migrated = await R.normalizeLegacy(legacy);
       await this.commit(R.patch(migrated, null, true));
-      const verified = root.WordMemo.validateState(await read());
+      const verified = root.WordMemo.validateState((await read()).state);
       if (
         verified.deck.cards.length !== migrated.deck.cards.length ||
         verified.results.length !== migrated.results.length

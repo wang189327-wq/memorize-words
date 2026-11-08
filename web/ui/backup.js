@@ -4,11 +4,32 @@ import { $, C, toast } from './dom.js';
 import { persist, rebuildQueue } from './state.js';
 import { render } from './navigation.js';
 import { restoreScheduler } from '../domain/scheduler.js';
+import {
+  encryptBackup,
+  decryptBackup,
+  encryptedFormat,
+  assertBackupFileSize,
+} from '../domain/backup-crypto.js';
+import { requestBackupPassword } from './backup-password.js';
+
+let importing = false;
 
 /** Import one active book. A different book requires explicit replacement confirmation. */
 export async function importData(raw, kind) {
+  if (importing) {
+    toast('正在处理备份，请稍后再试。');
+    return;
+  }
+  importing = true;
   try {
-    const data = JSON.parse(raw.replace(/^\uFEFF/, ''));
+    assertBackupFileSize(raw);
+    let data = JSON.parse(raw.replace(/^\uFEFF/, ''));
+    if (data?.format === encryptedFormat) {
+      if (kind !== 'restore') throw Error('这是完整备份，请使用“从备份恢复”。');
+      const password = await requestBackupPassword();
+      if (password === null) return;
+      data = await decryptBackup(data, password);
+    }
     let next;
     if (kind === 'restore') {
       next = restoreScheduler(C.importBackup(data));
@@ -45,6 +66,8 @@ export async function importData(raw, kind) {
     }
   } catch (error) {
     toast('导入失败：' + error.message);
+  } finally {
+    importing = false;
   }
 }
 
@@ -60,6 +83,20 @@ export function requestImport(kind) {
 export function exportBackup() {
   const raw = JSON.stringify(C.exportBackup(runtime.state), null, 2);
   const name = '词记-完整备份-' + C.localDate() + '.json';
+  downloadBackup(raw, name);
+}
+
+export async function exportEncryptedBackup() {
+  const password = await requestBackupPassword({ confirmPassword: true });
+  if (password === null) return;
+  toast('正在加密备份…');
+  const envelope = await encryptBackup(C.exportBackup(runtime.state), password);
+  downloadBackup(JSON.stringify(envelope), '词记-加密备份-' + C.localDate() + '.json');
+  toast('加密备份已交给文件保存器，请妥善保存密码。');
+}
+
+function downloadBackup(raw, name) {
+  assertBackupFileSize(raw);
   if (window.AndroidStore) window.AndroidStore.exportFile(raw, name);
   else {
     const a = document.createElement('a');

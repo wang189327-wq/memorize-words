@@ -2,8 +2,8 @@
 window.WORDMEMO_CONFIG = {
   "name": "词记",
   "applicationId": "cn.ielts75.app",
-  "versionName": "1.0",
-  "versionCode": 1,
+  "versionName": "1.1",
+  "versionCode": 2,
   "defaultApi": "",
   "updates": {
     "enabled": true,

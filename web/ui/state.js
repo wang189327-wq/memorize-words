@@ -47,7 +47,12 @@ export async function persist(next, progressChanged = true, { replace = false } 
       localStorage.setItem('ielts75-sync-dirty', '1');
       markedDirty = true;
     }
-    if (window.AndroidStore?.commit) {
+    if (window.AndroidStore && patch.replace) {
+      // Full restore/import must verify the replacement and retire the legacy file together.
+      // Ordinary commits deliberately leave an unverified migration source untouched.
+      if (!window.AndroidStore.save(JSON.stringify(next)))
+        throw Error('完整恢复未完成，已保留原记录。');
+    } else if (window.AndroidStore?.commit) {
       if (!window.AndroidStore.commit(JSON.stringify(patch)))
         throw Error('本地事务保存失败，请检查设备空间。');
     } else if (window.AndroidStore) {

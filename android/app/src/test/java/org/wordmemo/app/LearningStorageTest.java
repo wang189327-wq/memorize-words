@@ -95,4 +95,30 @@ public class LearningStorageTest {
             .getJSONObject("word")
             .getString("date"));
   }
+
+  @Test
+  public void confirmedReplacementRecoversCorruptLegacyAndSubsequentCommitsSurviveReopen()
+      throws Exception {
+    File directory = temporary.newFolder(), legacy = new File(directory, "learning-state.json");
+    Files.write(legacy.toPath(), "{invalid".getBytes(StandardCharsets.UTF_8));
+    storage = new LearningStorage(directory);
+    assertEquals("{invalid", storage.load());
+    assertTrue(storage.save(state().toString()));
+    assertFalse(legacy.exists());
+    JSONObject date = new JSONObject().put("date", "2026-11-08");
+    assertTrue(
+        storage.commit(
+            patch(
+                    new JSONObject()
+                        .put("learned", new JSONArray().put(new JSONArray().put("word").put(date))))
+                .toString()));
+    storage.close();
+    storage = new LearningStorage(directory);
+    assertEquals(
+        "2026-11-08",
+        new JSONObject(storage.load())
+            .getJSONObject("learned")
+            .getJSONObject("word")
+            .getString("date"));
+  }
 }
