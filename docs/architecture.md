@@ -1,0 +1,45 @@
+# 架构与修改入口
+
+项目保留原生JavaScript与Java，没有引入前端框架。页面使用ES模块；业务规则、存储和平台接口分别维护。
+
+| 位置                                | 职责                                                                 |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| `web/core.js`                       | 词库和备份验证、学习队列、题目、收藏合并等纯规则；也可被Node测试加载 |
+| `web/domain/learning.js`            | 7/18词复习节点，不读取页面                                           |
+| `web/ui/runtime.js`                 | 当前页面、队列、选项和内存状态                                       |
+| `web/ui/state.js`                   | 唯一的学习状态提交入口`persist`                                      |
+| `web/ui/cards.js`                   | 词卡、词汇拓展、收藏与切卡                                           |
+| `web/ui/learning.js`                | 学习安排、新词和学习中的拼写练习                                     |
+| `web/ui/review.js`                  | 复习范围、题目、结果和学习日期                                       |
+| `web/ui/library.js`                 | 词库列表与筛选                                                       |
+| `web/ui/settings.js`                | 设置、资源入口及账号表单                                             |
+| `web/ui/backup.js`                  | 导入、导出和内置示例更新                                             |
+| `web/ui/navigation.js`              | 页面切换及渲染调度                                                   |
+| `web/app.js`                        | 初始化及Android/同步回调注册                                         |
+| `web/browser-store.js`              | IndexedDB单份最新快照及旧本地格式迁移                                |
+| `web/sync.js`                       | 手动同步协议、分批传输及失败重试状态                                 |
+| `web/update.js`                     | 可选更新清单检查与下载入口                                           |
+| `android/.../LearningStorage.java`  | 原生AtomicFile快照                                                   |
+| `android/.../SpeechController.java` | 系统TTS及口音选择                                                    |
+| `android/.../AppUpdater.java`       | 下载验证及系统安装入口                                               |
+| `cloud/server.cjs`、`store.cjs`     | HTTP接口与Tablestore存储适配                                         |
+
+## 保存与失败处理
+
+业务函数先构造新状态，再`await persist(next)`。`persist`验证并等待真实写入成功，才替换`runtime.state`。写入期间阻止重复操作和页面切换；失败保留旧状态并允许重试。
+
+浏览器的`BrowserStore.save`返回Promise，不得当作立即成功的布尔值。Android桥接写入本身同步完成，也经同一个异步提交入口使用。新增页面时不要绕过此入口直接修改`runtime.state`或写数据库。
+
+IndexedDB只维护当前快照；旧迁移键在成功保存后清理。用户手动导出的完整备份不受清理影响。原生更新器只清理专用APK缓存，不访问学习文件。
+
+## 平台接口
+
+`window.AndroidStore`只在Android WebView存在，提供`load/save`、导入导出、朗读和更新等方法。网页端使用IndexedDB及浏览器能力。原生返回操作通过`window.onNativeImport`、`window.onNativeStatus`、`window.onNativeBack`处理，不读取ES模块内部变量。
+
+`WordMemo`是纯规则的浏览器入口；`WordMemoSync`和`WordMemoUpdate`分别负责可选同步和更新。页面之间通过明确的`import`共享函数；持久化状态仅从`state.js`提交。
+
+## 兼容范围
+
+旧1.4备份的`schemaVersion: 1`、`sjj-`词条ID和`source.sentence`仍可读取。本地存储键及后端环境变量保留历史`ielts75`前缀，避免无必要的数据迁移；它们不是访问个人服务器的配置。
+
+当前是单活动词库、单所有者自部署后端。若要增加多用户服务或同时切换多本词库，应先设计账号/书籍隔离及迁移测试，不能只放宽一个注册判断。

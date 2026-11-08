@@ -1,7 +1,0 @@
-{
-  "versionCode": 25,
-  "versionName": "1.4",
-  "downloadUrl": "https://github.com/wang189327-wq/ielts75-web/releases/download/v1.4/ielts75-1.4-no-book.apk",
-  "sha256": "7f7f470b995cc9cc9f089c327a3ee8f00b421cf618e88c4af6cd8b3098c99843",
-  "notes": "新增应用内下载更新、校验后交由系统确认安装，更新成功后首次启动自动清理本应用APK缓存。保留收藏同步功能和本地学习数据。此版安装后，后续更新可不经浏览器；更新包不附带书籍。"
-}

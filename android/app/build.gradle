@@ -1,0 +1,64 @@
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+
+plugins { id 'com.android.application' }
+
+def appConfig = new JsonSlurper().parse(rootProject.file('app.config.json'))
+
+android {
+    namespace 'org.wordmemo.app'
+    compileSdk 35
+    buildToolsVersion '35.0.0'
+
+    defaultConfig {
+        applicationId appConfig.applicationId
+        minSdk 26
+        targetSdk 35
+        versionCode appConfig.versionCode
+        versionName appConfig.versionName
+        resValue 'string', 'app_name', appConfig.name
+        buildConfigField 'String', 'UPDATE_RELEASE_BASE', JsonOutput.toJson(appConfig.updates.enabled ? appConfig.updates.releaseBase : '')
+    }
+    buildFeatures { buildConfig true }
+    if (System.getenv('WORDMEMO_KEYSTORE')) {
+        signingConfigs {
+            ownerRelease {
+                storeFile file(System.getenv('WORDMEMO_KEYSTORE'))
+                storePassword System.getenv('WORDMEMO_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('WORDMEMO_KEY_ALIAS')
+                keyPassword System.getenv('WORDMEMO_KEYSTORE_PASSWORD')
+            }
+        }
+        buildTypes.release.signingConfig signingConfigs.ownerRelease
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    sourceSets.main.assets.srcDir(layout.buildDirectory.dir('generated/web-assets'))
+}
+
+tasks.register('configureWeb', Exec) {
+    workingDir rootProject.projectDir
+    commandLine 'node', 'tools/configure.mjs'
+    inputs.file rootProject.file('app.config.json')
+    outputs.file rootProject.file('web/config.js')
+}
+tasks.register('syncWebAssets', Sync) {
+    dependsOn 'configureWeb'
+    from rootProject.file('web')
+    exclude '**/package.json'
+    into layout.buildDirectory.dir('generated/web-assets')
+    if (providers.gradleProperty('wordmemoBookPath').isPresent()) {
+        def privateBook = file(providers.gradleProperty('wordmemoBookPath').get())
+        exclude { item -> item.file == rootProject.file('web/deck.json') }
+        from(privateBook) { rename { 'deck.json' } }
+    }
+}
+tasks.named('preBuild') { dependsOn 'syncWebAssets' }
+
+dependencies { testImplementation 'junit:junit:4.13.2' }
+
+tasks.withType(Test).configureEach {
+    jvmArgs '-Dfile.encoding=UTF-8', '-Dsun.jnu.encoding=UTF-8'
+}

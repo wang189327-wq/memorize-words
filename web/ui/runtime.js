@@ -1,0 +1,27 @@
+/** Mutable UI state; durable commits go through state.js. */
+export const runtime = {
+  appearance: { size: 16, theme: 'mist' },
+  librarySentence: '',
+  libraryQuery: '',
+  libraryCard: null,
+  historyDate: '',
+  historyCard: null,
+  storageMode: localStorage.getItem('ielts75-mode') || '',
+  state: undefined,
+  tab: 'learn',
+  queue: [],
+  session: null,
+  importKind: 'deck',
+  toastTimer: undefined,
+  reviewOptions: {
+    modes: ['meaning'],
+    scope: 'all',
+    count: 20,
+    date: '',
+    favoriteCount: 20,
+    fromWord: '',
+    toWord: '',
+  },
+  exitPending: false,
+  saving: false,
+};

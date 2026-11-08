@@ -1,0 +1,11 @@
+node_modules
+build
+.gradle
+android/.gradle
+android/app/build
+package-lock.json
+gradlew
+gradlew.bat
+LICENSE
+web/config.js
+SOURCE_SHA256.json

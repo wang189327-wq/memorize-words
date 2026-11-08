@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "bookId": "wordmemo-demo",
+  "title": "词记原创示例：日常学习",
+  "revision": "demo-1",
+  "cards": [
+    {
+      "id": "demo-focus",
+      "word": "focus",
+      "order": 1,
+      "pos": "v.",
+      "meaning": "集中注意力",
+      "definition": "To give your attention to one task.",
+      "example": "I focus on one small goal each morning.",
+      "exampleZh": "我每天早晨专注于一个小目标。",
+      "source": {
+        "sentence": 1
+      },
+      "collocations": [
+        {
+          "en": "focus on a task",
+          "zh": "专注于任务"
+        }
+      ],
+      "supplementary": {
+        "notes": "Use the phrase in a sentence about your own learning.",
+        "family": [
+          {
+            "word": "focused",
+            "pos": "adj.",
+            "meaning": "专注的"
+          }
+        ]
+      },
+      "cloze": {
+        "prompt": "I ____ on one small goal each morning.",
+        "answers": ["focus"]
+      },
+      "conversion": {
+        "prompt": "She stayed ____ during the task.",
+        "answers": ["focused"]
+      }
+    },
+    {
+      "id": "demo-adapt",
+      "word": "adapt",
+      "order": 2,
+      "pos": "v.",
+      "meaning": "适应；调整",
+      "definition": "To change so that you can work well in a new situation.",
+      "example": "We adapt our plan after each test.",
+      "exampleZh": "每次测试后，我们都会调整计划。",
+      "source": {
+        "sentence": 1
+      },
+      "collocations": [
+        {
+          "en": "adapt to change",
+          "zh": "适应变化"
+        }
+      ],
+      "supplementary": {
+        "notes": "Use the phrase in a sentence about your own learning.",
+        "family": [
+          {
+            "word": "adaptation",
+            "pos": "n.",
+            "meaning": "适应；改编"
+          }
+        ]
+      },
+      "cloze": {
+        "prompt": "We ____ our plan after each test.",
+        "answers": ["adapt"]
+      },
+      "conversion": {
+        "prompt": "The new schedule required a period of ____.",
+        "answers": ["adaptation"]
+      }
+    },
+    {
+      "id": "demo-curious",
+      "word": "curious",
+      "order": 3,
+      "pos": "adj.",
+      "meaning": "好奇的",
+      "definition": "Wanting to learn or find out more about something.",
+      "example": "The curious student asked how the machine worked.",
+      "exampleZh": "这位好奇的学生询问机器如何运转。",
+      "source": {
+        "sentence": 2
+      },
+      "collocations": [
+        {
+          "en": "curious about science",
+          "zh": "对科学好奇"
+        }
+      ],
+      "supplementary": {
+        "notes": "Use the phrase in a sentence about your own learning.",
+        "family": [
+          {
+            "word": "curiosity",
+            "pos": "n.",
+            "meaning": "好奇心"
+          }
+        ]
+      },
+      "cloze": {
+        "prompt": "The ____ student asked how the machine worked.",
+        "answers": ["curious"]
+      },
+      "conversion": {
+        "prompt": "Her ____ led her to read about space.",
+        "answers": ["curiosity"]
+      }
+    },
+    {
+      "id": "demo-observe",
+      "word": "observe",
+      "order": 4,
+      "pos": "v.",
+      "meaning": "观察",
+      "definition": "To watch carefully in order to notice details.",
+      "example": "We observe the plants and write down any changes.",
+      "exampleZh": "我们观察植物，并记录任何变化。",
+      "source": {
+        "sentence": 2
+      },
+      "collocations": [
+        {
+          "en": "observe a change",
+          "zh": "观察变化"
+        }
+      ],
+      "supplementary": {
+        "notes": "Use the phrase in a sentence about your own learning.",
+        "family": [
+          {
+            "word": "observation",
+            "pos": "n.",
+            "meaning": "观察"
+          }
+        ]
+      },
+      "cloze": {
+        "prompt": "We ____ the plants and write down any changes.",
+        "answers": ["observe"]
+      },
+      "conversion": {
+        "prompt": "Careful ____ can reveal small changes.",
+        "answers": ["observation"]
+      }
+    },
+    {
+      "id": "demo-steady",
+      "word": "steady",
+      "order": 5,
+      "pos": "adj.",
+      "meaning": "稳定的；持续的",
+      "definition": "Continuing at an even level without sudden changes.",
+      "example": "A steady routine helps me learn every day.",
+      "exampleZh": "稳定的日常安排帮助我每天学习。",
+      "source": {
+        "sentence": 123
+      },
+      "collocations": [
+        {
+          "en": "steady progress",
+          "zh": "持续的进步"
+        }
+      ],
+      "supplementary": {
+        "notes": "Use the phrase in a sentence about your own learning.",
+        "family": [
+          {
+            "word": "steadily",
+            "pos": "adv.",
+            "meaning": "稳定地"
+          }
+        ]
+      },
+      "cloze": {
+        "prompt": "A ____ routine helps me learn every day.",
+        "answers": ["steady"]
+      },
+      "conversion": {
+        "prompt": "Her reading speed improved ____.",
+        "answers": ["steadily"]
+      }
+    },
+    {
+      "id": "demo-improve",
+      "word": "improve",
+      "order": 6,
+      "pos": "v.",
+      "meaning": "改善；提高",
+      "definition": "To become better or to make something better.",
+      "example": "Reading aloud can improve my confidence.",
+      "exampleZh": "大声朗读能提高我的自信心。",
+      "source": {
+        "sentence": 123
+      },
+      "collocations": [
+        {
+          "en": "improve a skill",
+          "zh": "提高一项技能"
+        }
+      ],
+      "supplementary": {
+        "notes": "Use the phrase in a sentence about your own learning.",
+        "family": [
+          {
+            "word": "improvement",
+            "pos": "n.",
+            "meaning": "改善；进步"
+          }
+        ]
+      },
+      "cloze": {
+        "prompt": "Reading aloud can ____ my confidence.",
+        "answers": ["improve"]
+      },
+      "conversion": {
+        "prompt": "There was a clear ____ in his writing.",
+        "answers": ["improvement"]
+      }
+    }
+  ]
+}
