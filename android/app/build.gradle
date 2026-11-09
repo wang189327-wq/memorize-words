@@ -49,6 +49,8 @@ tasks.register('syncWebAssets', Sync) {
     dependsOn 'configureWeb'
     from rootProject.file('web')
     exclude '**/package.json'
+    // The remote update manifest contains the APK hash; embedding it would create a hash cycle.
+    exclude 'version-reset-1.json'
     into layout.buildDirectory.dir('generated/web-assets')
     if (providers.gradleProperty('wordmemoBookPath').isPresent()) {
         def privateBook = file(providers.gradleProperty('wordmemoBookPath').get())
