@@ -35,7 +35,7 @@ for (const file of sourceFiles()) {
     if (
       file !== 'android/app/src/main/res/drawable-nodpi/app_icon.png' &&
       file !== 'web/icon.png' &&
-      !/^docs\/images\/(learn|review|settings)\.png$/.test(file)
+      !/^docs\/images\/(learn|library|review|review-rating|review-result|settings)\.png$/.test(file)
     )
       failures.push(`unexpected image: ${file}`);
     continue;
