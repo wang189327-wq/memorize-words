@@ -522,7 +522,7 @@ export async function recordResult(correct) {
 
 function ratingButtons(correct) {
   const actions = el('div', 'actions rating-actions');
-  const grades = correct ? [1, 2, 3, 4] : [1];
+  const grades = correct ? [1, 3, 4] : [1];
   for (const rating of grades)
     append(
       actions,

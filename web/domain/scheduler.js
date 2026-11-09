@@ -3,7 +3,7 @@ import { fsrs, createEmptyCard, generatorParameters } from '../vendor/fsrs.mjs';
 import { algorithm, validateRating, mergeRatingEvents } from './rating-contract.js';
 
 export { algorithm, mergeRatingEvents };
-export const feedback = [null, '不记得', '困难', '记得', '很熟悉'];
+export const feedback = [null, '不记得', '困难', '记得', '熟悉'];
 // Version these parameters together with algorithm. Changing defaults must not rewrite old history.
 export const parameters = generatorParameters({
   request_retention: 0.9,

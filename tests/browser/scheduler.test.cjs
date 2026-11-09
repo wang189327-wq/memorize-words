@@ -18,7 +18,7 @@ const { setup, snapshot } = require('./helpers.cjs');
     await page.locator('#answer').fill('focus');
     await page.getByRole('button', { name: '提交答案', exact: true }).click();
     assert.equal((await snapshot(page)).ratingEvents?.length || 0, 0);
-    await page.getByRole('button', { name: '很熟悉', exact: true }).click();
+    await page.getByRole('button', { name: '熟悉', exact: true }).click();
     await page.getByText('本轮复习完成', { exact: true }).waitFor();
     const saved = await snapshot(page);
     assert.equal(saved.ratingEvents.length, 1);
