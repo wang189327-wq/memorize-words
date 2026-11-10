@@ -1,5 +1,13 @@
 <h1 align="center">Memorize Words / 词记</h1>
 
+<p align="center">
+  <a href="https://github.com/wang189327-wq/memorize-words/actions/workflows/ci.yml"><img src="https://github.com/wang189327-wq/memorize-words/actions/workflows/ci.yml/badge.svg" alt="源码检查" /></a>
+  <a href="package.json"><img src="https://img.shields.io/badge/node-%E2%89%A522-3c873a?logo=nodedotjs&logoColor=white" alt="Node 22 或更新版本" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2e7d32" alt="MIT 许可" /></a>
+  <a href="https://github.com/wang189327-wq/memorize-words/releases/latest"><img src="https://img.shields.io/github/v/release/wang189327-wq/memorize-words?label=%E6%9C%80%E6%96%B0%E7%89%88" alt="最新发布" /></a>
+  <a href="https://wang189327-wq.github.io/memorize-words/"><img src="https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E4%BD%93%E9%AA%8C-%E6%89%93%E5%BC%80%E6%BC%94%E7%A4%BA-2e7d32" alt="在线体验：打开演示" /></a>
+</p>
+
 本地优先的单词学习工具：词库与学习记录保存在本机，提供安卓应用和网页版，用 FSRS 安排到期复习。可选自部署云端，只在点击"同步进度"时同步学习记录、评分与收藏。
 
 截图来自[在线使用](https://wang189327-wq.github.io/memorize-words/)页面，使用自带的6张原创示例词卡，不含任何真实学习数据。
