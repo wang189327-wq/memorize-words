@@ -1,3 +1,9 @@
+## 1.1.1 — 2026-11-10
+
+- Package the current three-level review rating and updated review documentation/screenshots.
+- Increment Android version code to 3 so installed 1.1 builds can detect this update.
+- Preserve the original signing identity and existing local learning data.
+
 # 更新记录
 
 ## 1.1 / versionCode 2

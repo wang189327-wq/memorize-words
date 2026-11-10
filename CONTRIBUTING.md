@@ -32,3 +32,27 @@ npm test
 - 复制：ui/clipboard.js维护输出格式与浏览器/原生适配，MainActivity提供原生剪贴板接口。
 
 修改源码后先格式化，再运行npm run generate；生成文件位于web/vendor、web/rating-contract.js、cloud/rating-contract.cjs及web/offline-assets.js，不手改生成结果。README产品截图由node tools/capture-demo.cjs生成，只使用原创示例和虚构进度。
+
+## 本地工作区与发行文件
+
+开发时使用Git工作区，保留远端和分支信息，不要把发行快照当作唯一维护入口。
+在工作区执行 `git config core.autocrlf false`；行尾由 `.gitattributes` 决定，普通文本为LF，Windows批处理为CRLF。
+修改前后运行 `git status --short` 与 `git diff`；执行 `git fetch origin` 后，`git status -sb` 可显示与远端的领先或落后关系。
+Git不会自动提醒未推送改动，需要主动执行上述检查。
+
+`local-delivery/` 与 `SOURCE_SHA256.json` 是本地交付和核验资料，不提交到仓库。
+已发布版本作为历史快照保留；后续构建使用新的版本码和Release标签。
+
+## 工具脚本怎么读、改完怎么验证
+
+| 入口                      | 用途                                     | 修改后的验证                                 |
+| ------------------------- | ---------------------------------------- | -------------------------------------------- |
+| `tools/configure.mjs`     | 从app.config.json生成前端配置            | npm run configure、npm run check:config      |
+| `tools/build-android.py`  | 在临时目录构建，解决Windows中文路径问题  | 正式构建及原生单元测试；检查包名、版本和签名 |
+| `tools/package-cloud.py`  | 按锁文件打包FC依赖，不部署服务器         | cloud/tests、检查ZIP无私人配置               |
+| `tools/build-offline.mjs` | 生成静态资源哈希清单                     | npm run check:generated、离线浏览器测试      |
+| `tools/check-public.mjs`  | 阻止私人词库、密钥及机器文件进入公开源码 | npm run check:public                         |
+| `tools/test.mjs`          | 运行规则、HTTP和浏览器测试               | npm test；失败时查看首个失败用例             |
+
+脚本从项目根目录执行。生成文件不要手改；先修改输入，再运行生成命令。
+构建签名通过环境变量传入，不能把个人磁盘路径或密码写到工具脚本。
